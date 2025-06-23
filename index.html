@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Facturación de Camiones</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- jsPDF CDN para generar PDFs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- jspdf-autotable para tablas en PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        /* Estilos generales del cuerpo y contenedor */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .section {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+        }
+
+        /* Estilos de la pantalla de bienvenida con animaciones */
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 80vh;
+            text-align: center;
+            background-color: #ffffff;
+            border-radius: 12px;
+            animation: fadeIn 1.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .welcome-title {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 15px;
+            animation: bounceIn 1s ease-out;
+        }
+        .welcome-subtitle {
+            font-size: 1.5rem;
+            color: #4a5568;
+            animation: slideIn 1.2s ease-out;
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+        @keyframes slideIn {
+            0% { transform: translateX(-100px); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Estilos para grupos de formulario e inputs */
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+        }
+
+        /* Estilos de botones con gradientes y sombras */
+        .button {
+            display: inline-block;
+            padding: 12px 25px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(66, 153, 225, 0.4);
+        }
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(66, 153, 225, 0.6);
+        }
+        .button-secondary {
+            background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+            box-shadow: 0 4px 10px rgba(160, 174, 192, 0.4);
+        }
+        .button-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(160, 174, 192, 0.6);
+        }
+
+        /* Estilos para las filas de ítems de la factura */
+        .item-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: flex-end;
+        }
+        .item-row > div {
+            flex: 1;
+        }
+        .item-row .w-full {
+            flex-grow: 1;
+        }
+        .item-row .small-input {
+            flex-basis: 100px; /* Para precio y cantidad */
+            max-width: 120px;
+        }
+        .item-row .remove-button {
+            background-color: #e53e3e;
+            padding: 10px 15px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s;
+            box-shadow: 0 2px 5px rgba(229, 62, 62, 0.3);
+        }
+        .item-row .remove-button:hover {
+            background-color: #c53030;
+        }
+
+        /* Estilos de tabla para historial y búsqueda */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px; /* Espacio entre filas */
+        }
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #edf2f7;
+        }
+        th {
+            background-color: #e2e8f0;
+            font-weight: 700;
+            color: #2d3748;
+            border-radius: 8px 8px 0 0; /* Esquinas superiores redondeadas */
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        tr:nth-child(even) td {
+            background-color: #f7fafc;
+        }
+        tr:hover td {
+            background-color: #ebf8ff;
+        }
+
+        /* Estilos para el cuadro de mensaje (éxito/error) */
+        .message-box {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #48bb78; /* Color por defecto: verde */
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+        }
+        .message-box.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <!-- Cuadro de mensaje para notificaciones -->
+    <div id="message-box" class="message-box"></div>
+
+    <header class="bg-blue-600 shadow-lg p-5">
+        <nav class="container flex justify-between items-center">
+            <h1 class="text-white text-3xl font-bold rounded-lg p-2 bg-blue-700">Factura Trucks</h1>
+            <div class="flex space-x-4">
+                <button id="nav-create" class="button button-secondary">Crear Factura</button>
+                <button id="nav-history" class="button button-secondary">Historial</button>
+                <button id="nav-search" class="button button-secondary">Buscar Factura</button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mt-8 flex-grow">
+        <!-- Pantalla de bienvenida con animaciones -->
+        <section id="welcome-screen" class="welcome-screen">
+            <h2 class="welcome-title">Bienvenido a Factura Trucks</h2>
+            <p class="welcome-subtitle">Tu solución para gestionar facturas de reparación de camiones.</p>
+        </section>
+
+        <!-- Sección para crear una nueva factura -->
+        <section id="create-invoice-section" class="section hidden">
+            <h2 class="text-3xl font-bold mb-6 text-gray-800">Crear Nueva Factura</h2>
+            <form id="invoice-form" class="space-y-6">
+                <!-- Información del Cliente -->
+                <div class="bg-blue-50 p-6 rounded-lg shadow-inner">
+                    <h3 class="text-xl font-semibold mb-4 text-blue-700">Información del Cliente</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label for="client-name">Nombre del Cliente:</label>
+                            <input type="text" id="client-name" required class="rounded-lg">
+                        </div>
+                        <div class="form-group">
+                            <label for="client-address">Dirección:</label>
+                            <input type="text" id="client-address" required class="rounded-lg">
+                        </div>
+                        <div class="form-group">
+                            <label for="client-phone">Teléfono:</label>
+                            <input type="tel" id="client-phone" required class="rounded-lg">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detalles del Servicio/Piezas -->
+                <div class="bg-green-50 p-6 rounded-lg shadow-inner">
+                    <h3 class="text-xl font-semibold mb-4 text-green-700">Detalles del Servicio/Piezas</h3>
+                    <div id="invoice-items-container">
+                        <!-- Las filas de ítems se añadirán aquí mediante JS -->
+                    </div>
+                    <button type="button" id="add-item-button" class="button button-secondary bg-gray-500 hover:bg-gray-600 mt-4 rounded-lg">
+                        Añadir Línea
+                    </button>
+                </div>
+
+                <!-- Totales de la factura -->
+                <div class="bg-purple-50 p-6 rounded-lg shadow-inner">
+                    <h3 class="text-xl font-semibold mb-4 text-purple-700">Totales</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label for="subtotal">Subtotal:</label>
+                            <input type="text" id="subtotal" readonly class="bg-gray-100 rounded-lg">
+                        </div>
+                        <div class="form-group">
+                            <label for="total-amount">Total:</label>
+                            <input type="text" id="total-amount" readonly class="bg-gray-100 font-bold text-lg rounded-lg">
+                        </div>
+                    </div>
+                    <div class="form-group mt-4">
+                        <label for="notes">Notas / Observaciones:</label>
+                        <textarea id="notes" rows="4" class="rounded-lg"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-4 mt-6">
+                    <button type="submit" class="button">Guardar Factura</button>
+                    <button type="button" id="print-invoice-button" class="button button-secondary bg-indigo-500 hover:bg-indigo-600">
+                        Generar PDF
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Sección de historial de facturas -->
+        <section id="invoice-history-section" class="section hidden">
+            <h2 class="text-3xl font-bold mb-6 text-gray-800">Historial de Facturas</h2>
+            <div id="invoice-history-table-container" class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th>ID Factura</th>
+                            <th>Fecha</th>
+                            <th>Cliente</th>
+                            <th>Total</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invoice-history-table-body">
+                        <!-- Las filas de facturas se cargarán aquí mediante JS -->
+                    </tbody>
+                </table>
+            </div>
+            <p id="no-history-message" class="text-center text-gray-500 mt-4 hidden">No hay facturas en el historial.</p>
+        </section>
+
+        <!-- Sección de búsqueda de facturas -->
+        <section id="invoice-search-section" class="section hidden">
+            <h2 class="text-3xl font-bold mb-6 text-gray-800">Buscar Facturas</h2>
+            <div class="form-group mb-6">
+                <label for="search-input">Buscar por Cliente, ID o Fecha:</label>
+                <input type="text" id="search-input" placeholder="Ej: Juan Pérez, FCT-20230101-001" class="rounded-lg">
+            </div>
+            <button id="search-button" class="button mb-6">Buscar</button>
+
+            <div id="search-results-container" class="overflow-x-auto">
+                <h3 class="text-2xl font-semibold mb-4 text-gray-700">Resultado de Búsqueda</h3>
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th>ID Factura</th>
+                            <th>Fecha</th>
+                            <th>Cliente</th>
+                            <th>Total</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="search-results-table-body">
+                        <!-- Los resultados de búsqueda se cargarán aquí mediante JS -->
+                    </tbody>
+                </table>
+            </div>
+            <p id="no-search-results-message" class="text-center text-gray-500 mt-4 hidden">No se encontraron facturas.</p>
+        </section>
+
+    </main>
+
+    <footer class="bg-gray-800 text-white p-5 text-center mt-8 rounded-t-lg">
+        <p>&copy; 2025 Factura Trucks. Todos los derechos reservados.</p>
+    </footer>
+
+    <script>
+        // Importar jsPDF y jspdf-autotable del CDN
+        const { jsPDF } = window.jspdf;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Elementos de la interfaz de usuario ---
+            const welcomeScreen = document.getElementById('welcome-screen');
+            const createInvoiceSection = document.getElementById('create-invoice-section');
+            const invoiceHistorySection = document.getElementById('invoice-history-section');
+            const invoiceSearchSection = document.getElementById('invoice-search-section');
+
+            const navCreate = document.getElementById('nav-create');
+            const navHistory = document.getElementById('nav-history');
+            const navSearch = document.getElementById('nav-search');
+
+            const invoiceForm = document.getElementById('invoice-form');
+            const invoiceItemsContainer = document.getElementById('invoice-items-container');
+            const addItemButton = document.getElementById('add-item-button');
+            const printInvoiceButton = document.getElementById('print-invoice-button');
+
+            const subtotalInput = document.getElementById('subtotal');
+            const totalAmountInput = document.getElementById('total-amount');
+
+            const invoiceHistoryTableBody = document.getElementById('invoice-history-table-body');
+            const noHistoryMessage = document.getElementById('no-history-message');
+
+            const searchInput = document.getElementById('search-input');
+            const searchButton = document.getElementById('search-button');
+            const searchResultsTableBody = document.getElementById('search-results-table-body');
+            const noSearchResultsMessage = document.getElementById('no-search-results-message');
+
+            const messageBox = document.getElementById('message-box');
+
+            let invoiceIdCounter = 0; // Contador simple para IDs únicos
+            const INVOICES_STORAGE_KEY = 'truckInvoices'; // Clave para localStorage
+
+            // --- Funciones de utilidad ---
+
+            /**
+             * Muestra un cuadro de mensaje temporal (éxito o error).
+             * @param {string} message - El mensaje a mostrar.
+             * @param {boolean} isSuccess - Verdadero para éxito (verde), falso para error (rojo).
+             */
+            function showMessageBox(message, isSuccess = true) {
+                messageBox.textContent = message;
+                messageBox.className = 'message-box ' + (isSuccess ? 'bg-green-500' : 'bg-red-500');
+                messageBox.classList.add('show');
+                setTimeout(() => {
+                    messageBox.classList.remove('show');
+                }, 3000);
+            }
+
+            /**
+             * Genera un ID de factura único basado en la fecha y un contador.
+             * @returns {string} El ID de factura generado.
+             */
+            function generateInvoiceId() {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+                invoiceIdCounter++; // Incrementa el contador para asegurar unicidad si la fecha es la misma
+                return `FCT-${year}${month}${day}-${hours}${minutes}${seconds}-${String(invoiceIdCounter).padStart(3, '0')}`;
+            }
+
+            /**
+             * Muestra la sección de la aplicación especificada y oculta las demás.
+             * @param {HTMLElement} sectionToShow - El elemento de la sección a mostrar.
+             */
+            function showSection(sectionToShow) {
+                [welcomeScreen, createInvoiceSection, invoiceHistorySection, invoiceSearchSection].forEach(section => {
+                    section.classList.add('hidden');
+                });
+                sectionToShow.classList.remove('hidden');
+            }
+
+            /**
+             * Calcula el subtotal y el total de la factura (sin impuestos).
+             */
+            function calculateTotals() {
+                let currentSubtotal = 0;
+                document.querySelectorAll('.item-row').forEach(row => {
+                    const quantity = parseFloat(row.querySelector('[name="item-quantity"]').value) || 0;
+                    const unitPrice = parseFloat(row.querySelector('[name="item-unit-price"]').value) || 0;
+                    currentSubtotal += quantity * unitPrice;
+                });
+
+                const totalAmount = currentSubtotal; // El total es igual al subtotal (sin impuestos)
+
+                subtotalInput.value = currentSubtotal.toFixed(2);
+                totalAmountInput.value = totalAmount.toFixed(2);
+            }
+
+            /**
+             * Añade una nueva fila para un ítem/servicio en el formulario de la factura.
+             */
+            function addItemRow() {
+                const itemRowDiv = document.createElement('div');
+                itemRowDiv.className = 'item-row grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4 items-end'; // Grid responsivo
+                itemRowDiv.innerHTML = `
+                    <div class="form-group col-span-full md:col-span-2 lg:col-span-2">
+                        <label>Descripción:</label>
+                        <input type="text" name="item-description" required class="w-full rounded-lg">
+                    </div>
+                    <div class="form-group small-input">
+                        <label>Cantidad:</label>
+                        <input type="number" name="item-quantity" value="1" min="1" required class="w-full rounded-lg">
+                    </div>
+                    <div class="form-group small-input">
+                        <label>Precio Unitario:</label>
+                        <input type="number" name="item-unit-price" value="0.00" min="0" step="0.01" required class="w-full rounded-lg">
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="remove-button w-full">X</button>
+                    </div>
+                `;
+                invoiceItemsContainer.appendChild(itemRowDiv);
+
+                // Añadir escuchadores de eventos para recalcular totales y eliminar fila
+                const quantityInput = itemRowDiv.querySelector('[name="item-quantity"]');
+                const unitPriceInput = itemRowDiv.querySelector('[name="item-unit-price"]');
+                const removeButton = itemRowDiv.querySelector('.remove-button');
+
+                quantityInput.addEventListener('input', calculateTotals);
+                unitPriceInput.addEventListener('input', calculateTotals);
+                removeButton.addEventListener('click', () => {
+                    itemRowDiv.remove();
+                    calculateTotals(); // Recalcula después de eliminar un ítem
+                });
+
+                calculateTotals(); // Recalcula después de añadir un nuevo ítem
+            }
+
+            /**
+             * Carga las facturas desde localStorage.
+             * @returns {Array} Un array de objetos de factura.
+             */
+            function loadInvoices() {
+                const invoicesJSON = localStorage.getItem(INVOICES_STORAGE_KEY);
+                return invoicesJSON ? JSON.parse(invoicesJSON) : [];
+            }
+
+            /**
+             * Guarda las facturas en localStorage.
+             * @param {Array} invoices - Un array de objetos de factura a guardar.
+             */
+            function saveInvoices(invoices) {
+                localStorage.setItem(INVOICES_STORAGE_KEY, JSON.stringify(invoices));
+            }
+
+            /**
+             * Renderiza la tabla de historial o resultados de búsqueda de facturas.
+             * @param {Array} invoicesToDisplay - Array de facturas a renderizar.
+             * @param {HTMLElement} targetTableBody - El elemento <tbody> donde se insertarán las filas.
+             * @param {HTMLElement} targetMessage - El elemento de mensaje a mostrar si no hay resultados.
+             */
+            function renderInvoiceTable(invoicesToDisplay, targetTableBody, targetMessage) {
+                targetTableBody.innerHTML = ''; // Limpia entradas previas
+                if (invoicesToDisplay.length === 0) {
+                    targetMessage.classList.remove('hidden');
+                } else {
+                    targetMessage.classList.add('hidden');
+                    invoicesToDisplay.forEach(invoice => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${invoice.id}</td>
+                            <td>${new Date(invoice.date).toLocaleDateString()}</td>
+                            <td>${invoice.client.name}</td>
+                            <td>$${invoice.totalAmount}</td>
+                            <td>
+                                <button data-invoice-id="${invoice.id}" class="view-invoice-button button button-secondary text-sm bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded-lg">Ver PDF</button>
+                                <button data-invoice-id="${invoice.id}" class="delete-invoice-button button button-secondary text-sm bg-red-500 hover:bg-red-600 px-3 py-1 rounded-lg ml-2">Eliminar</button>
+                            </td>
+                        `;
+                        targetTableBody.appendChild(row);
+                    });
+
+                    // Añadir escuchadores de eventos para los botones "Ver PDF" y "Eliminar"
+                    targetTableBody.querySelectorAll('.view-invoice-button').forEach(button => {
+                        button.addEventListener('click', (event) => {
+                            const invoiceId = event.target.dataset.invoiceId;
+                            generateInvoicePdf(loadInvoices().find(inv => inv.id === invoiceId));
+                        });
+                    });
+
+                    targetTableBody.querySelectorAll('.delete-invoice-button').forEach(button => {
+                        button.addEventListener('click', (event) => {
+                            const invoiceId = event.target.dataset.invoiceId;
+                            deleteInvoice(invoiceId);
+                        });
+                    });
+                }
+            }
+
+            /**
+             * Genera un documento PDF profesional para una factura dada.
+             * @param {Object} invoice - El objeto de la factura con todos sus datos.
+             */
+            function generateInvoicePdf(invoice) {
+                if (!invoice) {
+                    showMessageBox('No se pudo generar el PDF: Factura no encontrada.', false);
+                    return;
+                }
+
+                // Configuración de la empresa (estática para esta aplicación)
+                const companyName = "Reparaciones Trucks S.A.";
+                const companyAddress = "Calle Principal 123, Ciudad, País";
+                const companyPhone = "(809) 555-1234";
+
+                const doc = new jsPDF(); // Por defecto: 'p' (portrait), 'mm' (unidades), 'a4' (tamaño de página)
+
+                let y = 15; // Posición inicial en Y para el contenido
+
+                // --- Encabezado de la Factura ---
+                doc.setFontSize(24);
+                doc.text("FACTURA DE SERVICIO", 105, y, { align: 'center' });
+                y += 10;
+                doc.setFontSize(16);
+                doc.text(companyName, 105, y, { align: 'center' });
+                y += 7;
+                doc.setFontSize(10);
+                doc.text(companyAddress, 105, y, { align: 'center' });
+                y += 5;
+                doc.text(`Tel: ${companyPhone}`, 105, y, { align: 'center' });
+                y += 15; // Espacio después de la información de la empresa
+
+                // --- Información de la Factura ---
+                doc.setFontSize(14);
+                doc.text("Información de la Factura:", 20, y);
+                y += 8;
+                doc.setFontSize(12);
+                doc.text(`No. Factura: ${invoice.id}`, 20, y);
+                doc.text(`Fecha: ${new Date(invoice.date).toLocaleDateString()}`, 120, y);
+                y += 15; // Espacio
+
+                // --- Información del Cliente ---
+                doc.setFontSize(14);
+                doc.text("Información del Cliente:", 20, y);
+                y += 8;
+                doc.setFontSize(12);
+                doc.text(`Nombre: ${invoice.client.name}`, 20, y);
+                y += 7;
+                doc.text(`Dirección: ${invoice.client.address}`, 20, y);
+                y += 7;
+                doc.text(`Teléfono: ${invoice.client.phone}`, 20, y);
+                y += 15; // Espacio
+
+                // --- Detalles del Servicio y Reparación (Tabla) ---
+                doc.setFontSize(14);
+                doc.text("Detalles del Servicio y Reparación:", 20, y);
+                y += 10;
+
+                const tableColumn = ["Descripción", "Cantidad", "P. Unitario", "Total"];
+                const tableRows = [];
+
+                invoice.items.forEach(item => {
+                    const itemTotal = (item.quantity * item.unitPrice).toFixed(2);
+                    tableRows.push([item.description, item.quantity, `$${item.unitPrice.toFixed(2)}`, `$${itemTotal}`]);
+                });
+
+                doc.autoTable({
+                    startY: y,
+                    head: [tableColumn],
+                    body: tableRows,
+                    theme: 'striped', // 'striped', 'grid', 'plain'
+                    headStyles: { fillColor: [66, 153, 225], textColor: [255, 255, 255], fontStyle: 'bold' }, // Azul de Tailwind
+                    styles: { fontSize: 10, cellPadding: 3, overflow: 'linebreak' },
+                    columnStyles: {
+                        0: { cellWidth: 80 }, // Descripción
+                        1: { cellWidth: 20, halign: 'right' }, // Cantidad
+                        2: { cellWidth: 30, halign: 'right' }, // Precio Unitario
+                        3: { cellWidth: 30, halign: 'right' }  // Total
+                    },
+                    margin: { left: 20, right: 20 }
+                });
+
+                // Actualizar la posición Y después de la tabla
+                y = doc.autoTable.previous.finalY + 15;
+
+                // --- Totales ---
+                doc.setFontSize(14);
+                // Subtotal
+                doc.text("Subtotal:", 90, y); // Etiqueta Subtotal (movida más a la izquierda)
+                doc.text(`$${invoice.subtotal.toFixed(2)}`, 190, y, { align: 'right' }); // Monto Subtotal (se mantiene alineado a la derecha)
+                y += 10; // Espacio vertical para la siguiente línea (aumentado ligeramente para más separación)
+
+                doc.setFontSize(14);
+                doc.text("Total a Pagar:", 90, y); // Etiqueta Total a Pagar (movida más a la izquierda)
+                doc.setFontSize(16); // Hacer el total más grande
+                doc.setFont(undefined, 'bold'); // Negrita para el total
+                doc.text(`$${invoice.totalAmount.toFixed(2)}`, 190, y, { align: 'right' }); // Monto Total (se mantiene alineado a la derecha)
+                doc.setFont(undefined, 'normal'); // Resetear negrita
+                y += 15; // Espacio después de la sección de totales
+
+                // --- Notas ---
+                if (invoice.notes) {
+                    doc.setFontSize(12);
+                    doc.text("Notas / Observaciones:", 20, y);
+                    y += 7;
+                    // Auto-wrap de texto para las notas
+                    const splitNotes = doc.splitTextToSize(invoice.notes, 170); // 170mm de ancho para el texto
+                    doc.text(splitNotes, 20, y);
+                }
+
+                // Guarda el PDF con un nombre descriptivo
+                doc.save(`factura-${invoice.id}.pdf`);
+                showMessageBox('PDF de la factura generado con éxito!', true);
+            }
+
+            /**
+             * Elimina una factura de localStorage.
+             * @param {string} invoiceId - El ID de la factura a eliminar.
+             */
+            function deleteInvoice(invoiceId) {
+                // Confirmación para eliminar (usando el confirm del navegador por simplicidad)
+                if (!confirm('¿Estás seguro de que quieres eliminar esta factura?')) {
+                    return;
+                }
+
+                let invoices = loadInvoices();
+                const initialLength = invoices.length;
+                // Filtra la factura a eliminar
+                invoices = invoices.filter(inv => inv.id !== invoiceId);
+
+                if (invoices.length < initialLength) {
+                    saveInvoices(invoices); // Guarda las facturas actualizadas
+                    showMessageBox('Factura eliminada con éxito.', true);
+                    // Vuelve a renderizar la vista actual (historial o resultados de búsqueda)
+                    if (!invoiceHistorySection.classList.contains('hidden')) {
+                        renderInvoiceTable(loadInvoices(), invoiceHistoryTableBody, noHistoryMessage);
+                    } else if (!invoiceSearchSection.classList.contains('hidden')) {
+                        performSearch(); // Vuelve a ejecutar la búsqueda para actualizar resultados
+                    }
+                } else {
+                    showMessageBox('Error al eliminar la factura. No encontrada.', false);
+                }
+            }
+
+
+            // --- Escuchadores de Eventos ---
+
+            // Navegación principal
+            navCreate.addEventListener('click', () => {
+                showSection(createInvoiceSection);
+                invoiceForm.reset(); // Limpia el formulario
+                invoiceItemsContainer.innerHTML = ''; // Limpia los ítems
+                addItemRow(); // Añade una fila de ítem inicial
+                calculateTotals(); // Restablece los totales
+            });
+
+            navHistory.addEventListener('click', () => {
+                showSection(invoiceHistorySection);
+                renderInvoiceTable(loadInvoices(), invoiceHistoryTableBody, noHistoryMessage); // Carga y muestra el historial
+            });
+
+            navSearch.addEventListener('click', () => {
+                showSection(invoiceSearchSection);
+                searchInput.value = ''; // Limpia el campo de búsqueda
+                searchResultsTableBody.innerHTML = ''; // Limpia los resultados previos
+                noSearchResultsMessage.classList.add('hidden'); // Oculta el mensaje "no resultados"
+            });
+
+            // Envío del formulario de factura
+            invoiceForm.addEventListener('submit', (event) => {
+                event.preventDefault(); // Previene el envío del formulario por defecto
+
+                const client = {
+                    name: document.getElementById('client-name').value,
+                    address: document.getElementById('client-address').value,
+                    phone: document.getElementById('client-phone').value,
+                };
+
+                const items = [];
+                let isValidItems = true;
+                document.querySelectorAll('.item-row').forEach(row => {
+                    const description = row.querySelector('[name="item-description"]').value;
+                    const quantity = parseFloat(row.querySelector('[name="item-quantity"]').value);
+                    const unitPrice = parseFloat(row.querySelector('[name="item-unit-price"]').value);
+
+                    // Validar que los campos de los ítems estén completos y sean válidos
+                    if (!description || isNaN(quantity) || quantity <= 0 || isNaN(unitPrice) || unitPrice < 0) {
+                        isValidItems = false;
+                        return; // Sale del forEach si un ítem no es válido
+                    }
+
+                    items.push({ description, quantity, unitPrice });
+                });
+
+                if (!isValidItems || items.length === 0) {
+                    showMessageBox('Por favor, complete todos los campos de los ítems correctamente.', false);
+                    return;
+                }
+
+                calculateTotals(); // Asegura que los totales estén actualizados antes de guardar
+                const subtotal = parseFloat(subtotalInput.value);
+                const totalAmount = parseFloat(totalAmountInput.value);
+                const notes = document.getElementById('notes').value;
+
+                // Crear el objeto de la nueva factura
+                const newInvoice = {
+                    id: generateInvoiceId(),
+                    date: new Date().toISOString(), // Guarda la fecha en formato ISO para fácil recuperación
+                    client,
+                    items,
+                    subtotal,
+                    totalAmount,
+                    notes
+                };
+
+                const invoices = loadInvoices(); // Carga las facturas existentes
+                invoices.push(newInvoice); // Añade la nueva factura
+                saveInvoices(invoices); // Guarda todas las facturas de nuevo en localStorage
+
+                showMessageBox('Factura guardada con éxito!', true);
+                invoiceForm.reset(); // Limpia el formulario
+                invoiceItemsContainer.innerHTML = ''; // Limpia los ítems
+                addItemRow(); // Añade una fila de ítem inicial
+                calculateTotals(); // Restablece los totales
+            });
+
+            // Botón para añadir más filas de ítems
+            addItemButton.addEventListener('click', addItemRow);
+
+            // Botón para generar PDF de la factura actual (vista previa)
+            printInvoiceButton.addEventListener('click', () => {
+                const client = {
+                    name: document.getElementById('client-name').value,
+                    address: document.getElementById('client-address').value,
+                    phone: document.getElementById('client-phone').value,
+                };
+
+                const items = [];
+                let isValidItems = true;
+                document.querySelectorAll('.item-row').forEach(row => {
+                    const description = row.querySelector('[name="item-description"]').value;
+                    const quantity = parseFloat(row.querySelector('[name="item-quantity"]').value);
+                    const unitPrice = parseFloat(row.querySelector('[name="item-unit-price"]').value);
+
+                    if (!description || isNaN(quantity) || quantity <= 0 || isNaN(unitPrice) || unitPrice < 0) {
+                        isValidItems = false;
+                        return;
+                    }
+                    items.push({ description, quantity, unitPrice });
+                });
+
+                if (!isValidItems || items.length === 0) {
+                    showMessageBox('Por favor, complete todos los campos de los ítems correctamente antes de generar el PDF.', false);
+                    return;
+                }
+
+                calculateTotals(); // Asegura que los totales estén actualizados
+                const subtotal = parseFloat(subtotalInput.value);
+                const totalAmount = parseFloat(totalAmountInput.value);
+                const notes = document.getElementById('notes').value;
+
+                // Crea un objeto de factura temporal para la generación del PDF
+                const currentFormDataAsInvoice = {
+                    id: 'PREVIEW-' + Math.floor(Math.random() * 10000), // ID ficticio para la vista previa
+                    date: new Date().toISOString(),
+                    client,
+                    items,
+                    subtotal,
+                    totalAmount,
+                    notes
+                };
+
+                generateInvoicePdf(currentFormDataAsInvoice);
+            });
+
+            // Funcionalidad de búsqueda
+            searchButton.addEventListener('click', performSearch);
+            searchInput.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter') {
+                    performSearch();
+                }
+            });
+
+            /**
+             * Realiza una búsqueda de facturas en localStorage basada en el término de búsqueda.
+             */
+            function performSearch() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                const allInvoices = loadInvoices(); // Carga todas las facturas
+                let filteredInvoices = [];
+
+                if (searchTerm) {
+                    // Filtra las facturas que coincidan con el término de búsqueda
+                    filteredInvoices = allInvoices.filter(invoice =>
+                        invoice.id.toLowerCase().includes(searchTerm) ||
+                        invoice.client.name.toLowerCase().includes(searchTerm) ||
+                        new Date(invoice.date).toLocaleDateString().toLowerCase().includes(searchTerm)
+                    );
+                } else {
+                    filteredInvoices = allInvoices; // Si no hay término de búsqueda, muestra todas
+                }
+                renderInvoiceTable(filteredInvoices, searchResultsTableBody, noSearchResultsMessage);
+            }
+
+            // --- Configuración inicial al cargar la página ---
+            addItemRow(); // Añade una fila de ítem inicial al cargar la sección de crear factura
+            calculateTotals(); // Realiza un cálculo inicial de totales
+
+            // Muestra la pantalla de bienvenida al cargar la página
+            showSection(welcomeScreen);
+        });
+    </script>
+</body>
+</html>
