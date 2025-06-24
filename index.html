@@ -93,7 +93,7 @@
             padding: 12px;
             border: 1px solid #cbd5e0;
             border-radius: 8px;
-            box-sizing: border-box;
+            box-sizing: border;
             transition: border-color 0.2s;
         }
         .form-group input:focus,
@@ -558,59 +558,54 @@
                     return;
                 }
 
-                // Configuración de la empresa (estática para esta aplicación)
-                const companyName = "Reparaciones Trucks S.A.";
-                const companyAddress = "Calle Principal 123, Ciudad, País";
-                const companyPhone = "(809) 555-1234";
+                // Información de la empresa (actualizada)
+                const companyName = "EL GORDO, MECANICA PESADA";
+                const companyAddress = "SANTIAGO, RD";
+                const companyPhone = "809-977-1115";
 
-                // Se establece el tamaño de página personalizado, por ejemplo 80mm de ancho y 150mm de alto
-                // para impresoras de recibos, o un tamaño de A4 si es para impresoras estándar.
-                // Aquí usamos A4 (210mm x 297mm) pero con tamaños de fuente muy grandes para una impresora pequeña.
-                // Si la impresora JACL-P210 usa un tamaño de papel específico y muy reducido (ej. térmico),
-                // necesitarías un tamaño de documento más pequeño como new jsPDF('p', 'mm', [80, 150]);
-                // Para maximizar la legibilidad en A4 (tamaño de PDF estándar), ajustamos las fuentes.
-                const doc = new jsPDF(); 
+                const doc = new jsPDF();
 
                 let y = 15; // Posición inicial en Y para el contenido
 
                 // --- Encabezado de la Factura ---
                 doc.setFontSize(32); // Título Principal
                 doc.text("FACTURA DE SERVICIO", 105, y, { align: 'center' });
-                y += 15; // Aumento de espacio
-                doc.setFontSize(28); // Nombre de la Empresa
+                y += 18; // Espacio
+                doc.setFontSize(26); // Nombre de la Empresa
                 doc.text(companyName, 105, y, { align: 'center' });
-                y += 12; // Aumento de espacio
-                doc.setFontSize(20); // Dirección de la Empresa
+                y += 14; // Espacio
+                doc.setFontSize(24); // Dirección de la Empresa
                 doc.text(companyAddress, 105, y, { align: 'center' });
-                y += 10; // Aumento de espacio
+                y += 12; // Espacio
                 doc.text(`Tel: ${companyPhone}`, 105, y, { align: 'center' });
-                y += 25; // Más espacio después de la información de la empresa
+                y += 30; // Gran espacio después de la información de la empresa
 
                 // --- Información de la Factura ---
-                doc.setFontSize(24); // Título de sección
+                doc.setFontSize(26); // Título de sección
                 doc.text("Información de la Factura:", 20, y);
-                y += 12; // Aumento de espacio
-                doc.setFontSize(20); // Contenido
-                doc.text(`No. Factura: ${invoice.id}`, 20, y);
-                doc.text(`Fecha: ${new Date(invoice.date).toLocaleDateString()}`, 120, y);
-                y += 25; // Más espacio
+                y += 14; // Espacio
+                doc.setFontSize(26); // Contenido
+                doc.text(`No. Factura: ${invoice.id}`, 20, y); // Solo izquierda
+                y += 12; // Espacio para la siguiente línea (abajo)
+                doc.text(`Fecha: ${new Date(invoice.date).toLocaleDateString()}`, 20, y); // Solo izquierda, debajo del ID
+                y += 30; // Gran espacio
 
                 // --- Información del Cliente ---
-                doc.setFontSize(24); // Título de sección
+                doc.setFontSize(26); // Título de sección
                 doc.text("Información del Cliente:", 20, y);
-                y += 12; // Aumento de espacio
-                doc.setFontSize(20); // Contenido
-                doc.text(`Nombre: ${invoice.client.name}`, 20, y);
-                y += 10; // Aumento de espacio
-                doc.text(`Dirección: ${invoice.client.address}`, 20, y);
-                y += 10; // Aumento de espacio
-                doc.text(`Teléfono: ${invoice.client.phone}`, 20, y);
-                y += 25; // Más espacio
+                y += 14; // Espacio
+                doc.setFontSize(26); // Contenido
+                doc.text(`Nombre: ${invoice.client.name}`, 20, y); // Solo izquierda
+                y += 12; // Espacio
+                doc.text(`Dirección: ${invoice.client.address}`, 20, y); // Solo izquierda
+                y += 12; // Espacio
+                doc.text(`Teléfono: ${invoice.client.phone}`, 20, y); // Solo izquierda
+                y += 30; // Gran espacio
 
                 // --- Detalles del Servicio y Reparación (Tabla) ---
-                doc.setFontSize(24); // Título de sección
+                doc.setFontSize(26); // Título de sección
                 doc.text("Detalles del Servicio y Reparación:", 20, y);
-                y += 15; // Aumento de espacio
+                y += 16; // Espacio
 
                 const tableColumn = ["Descripción", "Cantidad", "P. Unitario", "Total"];
                 const tableRows = [];
@@ -624,11 +619,11 @@
                     startY: y,
                     head: [tableColumn],
                     body: tableRows,
-                    theme: 'striped', // 'striped', 'grid', 'plain'
-                    headStyles: { fillColor: [66, 153, 225], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 16 }, // Encabezados de tabla más grandes
-                    styles: { fontSize: 16, cellPadding: 6, overflow: 'linebreak' }, // Contenido de tabla más grande y más espaciado
+                    theme: 'plain', // Cambiado a 'plain' para quitar el fondo del encabezado
+                    headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', fontSize: 24 }, // Sin fondo azul, texto negro
+                    styles: { fontSize: 26, cellPadding: 8, overflow: 'linebreak' }, // Contenido de tabla muy grande y mucho espaciado
                     columnStyles: {
-                        0: { cellWidth: 80 }, // Descripción
+                        0: { cellWidth: 70 }, // Descripción - Ajustado para acomodar el tamaño de fuente
                         1: { cellWidth: 25, halign: 'right' }, // Cantidad
                         2: { cellWidth: 35, halign: 'right' }, // Precio Unitario
                         3: { cellWidth: 35, halign: 'right' }  // Total
@@ -637,31 +632,31 @@
                 });
 
                 // Actualizar la posición Y después de la tabla
-                y = doc.autoTable.previous.finalY + 30; // Más espacio después de la tabla
+                y = doc.autoTable.previous.finalY + 35; // Mucho más espacio después de la tabla
 
                 // --- Totales ---
-                doc.setFontSize(22); // Tamaño para Subtotal
+                doc.setFontSize(26); // Tamaño para Subtotal
                 // Subtotal
-                doc.text("Subtotal:", 100, y); // Etiqueta Subtotal
+                doc.text("Subtotal:", 90, y); // Etiqueta Subtotal (ajustado para dejar espacio)
                 doc.text(`$${invoice.subtotal.toFixed(2)}`, 190, y, { align: 'right' }); // Monto Subtotal
-                y += 18; // Más espacio vertical para la siguiente línea
+                y += 20; // Mucho más espacio vertical para la siguiente línea
 
-                doc.setFontSize(24); // Etiqueta "Total a Pagar"
-                doc.text("Total a Pagar:", 100, y); // Etiqueta Total a Pagar
+                doc.setFontSize(26); // Etiqueta "Total a Pagar"
+                doc.text("Total a Pagar:", 90, y); // Etiqueta Total a Pagar
                 doc.setFontSize(32); // ¡MISMO TAMAÑO QUE EL TÍTULO PRINCIPAL!
                 doc.setFont(undefined, 'bold'); // Negrita para el total
                 doc.text(`$${invoice.totalAmount.toFixed(2)}`, 190, y, { align: 'right' }); // Monto Total
                 doc.setFont(undefined, 'normal'); // Resetear negrita
-                y += 30; // Más espacio después de la sección de totales
+                y += 35; // Mucho más espacio después de la sección de totales
 
                 // --- Notas ---
                 if (invoice.notes) {
-                    doc.setFontSize(18); // Tamaño para Notas / Observaciones
+                    doc.setFontSize(26); // Tamaño para Notas / Observaciones
                     doc.text("Notas / Observaciones:", 20, y);
-                    y += 10; // Aumento de espacio
+                    y += 12; // Más espacio
                     // Auto-wrap de texto para las notas
                     const splitNotes = doc.splitTextToSize(invoice.notes, 170); // 170mm de ancho para el texto
-                    doc.setFontSize(16); // Tamaño para el contenido de las notas
+                    doc.setFontSize(24); // Tamaño para el contenido de las notas
                     doc.text(splitNotes, 20, y);
                 }
 
