@@ -12,6 +12,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- jspdf-autotable para tablas en PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- ICONOS PARA LA APLICACIÓN WEB (PWA-like behavior) -->
+    <!-- Para Safari en iOS -->
+    <link rel="apple-touch-icon" href="https://placehold.co/180x180/4299e1/ffffff?text=FT">
+    <!-- Icono general para navegadores y atajos -->
+    <link rel="icon" href="https://placehold.co/32x32/4299e1/ffffff?text=FT" sizes="32x32">
+    <link rel="icon" href="https://placehold.co/192x192/4299e1/ffffff?text=FT" sizes="192x192">
+    <!-- Puedes reemplazar estas URLs de placehold.co con la URL de tu propio logo/icono de camión si lo tienes. -->
+
     <style>
         /* Estilos generales del cuerpo y contenedor */
         body {
@@ -422,7 +431,7 @@
             }
 
             /**
-             * Calcula el subtotal y el total de la factura (sin impuestos).
+             * Calcula el subtotal y el total de la factura.
              */
             function calculateTotals() {
                 let currentSubtotal = 0;
@@ -432,7 +441,7 @@
                     currentSubtotal += quantity * unitPrice;
                 });
 
-                const totalAmount = currentSubtotal; // El total es igual al subtotal (sin impuestos)
+                const totalAmount = currentSubtotal;
 
                 subtotalInput.value = currentSubtotal.toFixed(2);
                 totalAmountInput.value = totalAmount.toFixed(2);
@@ -513,7 +522,7 @@
                             <td>${invoice.id}</td>
                             <td>${new Date(invoice.date).toLocaleDateString()}</td>
                             <td>${invoice.client.name}</td>
-                            <td>$${invoice.totalAmount}</td>
+                            <td>$${invoice.totalAmount.toFixed(2)}</td>
                             <td>
                                 <button data-invoice-id="${invoice.id}" class="view-invoice-button button button-secondary text-sm bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded-lg">Ver PDF</button>
                                 <button data-invoice-id="${invoice.id}" class="delete-invoice-button button button-secondary text-sm bg-red-500 hover:bg-red-600 px-3 py-1 rounded-lg ml-2">Eliminar</button>
@@ -531,7 +540,7 @@
                     });
 
                     targetTableBody.querySelectorAll('.delete-invoice-button').forEach(button => {
-                        button.addEventListener('click', (event) => {
+                        button.addEventListener('click', () => {
                             const invoiceId = event.target.dataset.invoiceId;
                             deleteInvoice(invoiceId);
                         });
@@ -559,41 +568,41 @@
                 let y = 15; // Posición inicial en Y para el contenido
 
                 // --- Encabezado de la Factura ---
-                doc.setFontSize(24);
+                doc.setFontSize(28); // Más grande
                 doc.text("FACTURA DE SERVICIO", 105, y, { align: 'center' });
-                y += 10;
-                doc.setFontSize(16);
+                y += 12;
+                doc.setFontSize(20); // Más grande
                 doc.text(companyName, 105, y, { align: 'center' });
-                y += 7;
-                doc.setFontSize(10);
+                y += 9;
+                doc.setFontSize(14); // Más grande
                 doc.text(companyAddress, 105, y, { align: 'center' });
-                y += 5;
+                y += 7;
                 doc.text(`Tel: ${companyPhone}`, 105, y, { align: 'center' });
-                y += 15; // Espacio después de la información de la empresa
+                y += 18; // Más espacio después de la información de la empresa
 
                 // --- Información de la Factura ---
-                doc.setFontSize(14);
+                doc.setFontSize(16); // Más grande
                 doc.text("Información de la Factura:", 20, y);
-                y += 8;
-                doc.setFontSize(12);
+                y += 9;
+                doc.setFontSize(14); // Más grande
                 doc.text(`No. Factura: ${invoice.id}`, 20, y);
                 doc.text(`Fecha: ${new Date(invoice.date).toLocaleDateString()}`, 120, y);
-                y += 15; // Espacio
+                y += 18; // Más espacio
 
                 // --- Información del Cliente ---
-                doc.setFontSize(14);
+                doc.setFontSize(16); // Más grande
                 doc.text("Información del Cliente:", 20, y);
-                y += 8;
-                doc.setFontSize(12);
+                y += 9;
+                doc.setFontSize(14); // Más grande
                 doc.text(`Nombre: ${invoice.client.name}`, 20, y);
-                y += 7;
+                y += 8;
                 doc.text(`Dirección: ${invoice.client.address}`, 20, y);
-                y += 7;
+                y += 8;
                 doc.text(`Teléfono: ${invoice.client.phone}`, 20, y);
-                y += 15; // Espacio
+                y += 18; // Más espacio
 
                 // --- Detalles del Servicio y Reparación (Tabla) ---
-                doc.setFontSize(14);
+                doc.setFontSize(16); // Más grande
                 doc.text("Detalles del Servicio y Reparación:", 20, y);
                 y += 10;
 
@@ -610,8 +619,8 @@
                     head: [tableColumn],
                     body: tableRows,
                     theme: 'striped', // 'striped', 'grid', 'plain'
-                    headStyles: { fillColor: [66, 153, 225], textColor: [255, 255, 255], fontStyle: 'bold' }, // Azul de Tailwind
-                    styles: { fontSize: 10, cellPadding: 3, overflow: 'linebreak' },
+                    headStyles: { fillColor: [66, 153, 225], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 12 }, // Encabezados de tabla más grandes
+                    styles: { fontSize: 12, cellPadding: 4, overflow: 'linebreak' }, // Contenido de tabla más grande y más espaciado
                     columnStyles: {
                         0: { cellWidth: 80 }, // Descripción
                         1: { cellWidth: 20, halign: 'right' }, // Cantidad
@@ -622,28 +631,28 @@
                 });
 
                 // Actualizar la posición Y después de la tabla
-                y = doc.autoTable.previous.finalY + 15;
+                y = doc.autoTable.previous.finalY + 20; // Más espacio después de la tabla
 
                 // --- Totales ---
-                doc.setFontSize(14);
+                doc.setFontSize(16); // Más grande
                 // Subtotal
-                doc.text("Subtotal:", 90, y); // Etiqueta Subtotal (movida más a la izquierda)
-                doc.text(`$${invoice.subtotal.toFixed(2)}`, 190, y, { align: 'right' }); // Monto Subtotal (se mantiene alineado a la derecha)
-                y += 10; // Espacio vertical para la siguiente línea (aumentado ligeramente para más separación)
+                doc.text("Subtotal:", 120, y); // Etiqueta Subtotal (coordenada ajustada para espacio)
+                doc.text(`$${invoice.subtotal.toFixed(2)}`, 190, y, { align: 'right' }); // Monto Subtotal
+                y += 12; // Más espacio vertical para la siguiente línea
 
-                doc.setFontSize(14);
-                doc.text("Total a Pagar:", 90, y); // Etiqueta Total a Pagar (movida más a la izquierda)
-                doc.setFontSize(16); // Hacer el total más grande
+                doc.setFontSize(18); // Más grande para "Total a Pagar"
+                doc.text("Total a Pagar:", 120, y); // Etiqueta Total a Pagar (coordenada ajustada para espacio)
+                doc.setFontSize(24); // ¡MUCHO MÁS GRANDE para el total final!
                 doc.setFont(undefined, 'bold'); // Negrita para el total
-                doc.text(`$${invoice.totalAmount.toFixed(2)}`, 190, y, { align: 'right' }); // Monto Total (se mantiene alineado a la derecha)
+                doc.text(`$${invoice.totalAmount.toFixed(2)}`, 190, y, { align: 'right' }); // Monto Total
                 doc.setFont(undefined, 'normal'); // Resetear negrita
-                y += 15; // Espacio después de la sección de totales
+                y += 20; // Más espacio después de la sección de totales
 
                 // --- Notas ---
                 if (invoice.notes) {
-                    doc.setFontSize(12);
+                    doc.setFontSize(14); // Más grande
                     doc.text("Notas / Observaciones:", 20, y);
-                    y += 7;
+                    y += 8;
                     // Auto-wrap de texto para las notas
                     const splitNotes = doc.splitTextToSize(invoice.notes, 170); // 170mm de ancho para el texto
                     doc.text(splitNotes, 20, y);
@@ -659,7 +668,7 @@
              * @param {string} invoiceId - El ID de la factura a eliminar.
              */
             function deleteInvoice(invoiceId) {
-                // Confirmación para eliminar (usando el confirm del navegador por simplicidad)
+                // Confirmación para eliminar
                 if (!confirm('¿Estás seguro de que quieres eliminar esta factura?')) {
                     return;
                 }
@@ -811,6 +820,7 @@
                     notes
                 };
 
+                // Genera el PDF directamente desde el cliente
                 generateInvoicePdf(currentFormDataAsInvoice);
             });
 
